@@ -22,6 +22,13 @@ namespace bso { namespace utilities { namespace geometry {
 		double getVolume() const;
 		bool isInside(const vertex& p1, const double& tol = 1e-3) const;
 		bool isInsideOrOn(const vertex& p1, const double& tol = 1e-3) const;
+	
+	// Sebas: add operator so quads can be sorted in map<> 
+		bool operator<(const quad_hexahedron& rhs) const
+		{
+			return getVertices() < rhs.getVertices(); 
+		}
+		double fitnessQ = 0;
 	};
 	
 } // namespace geometry
