@@ -12,7 +12,10 @@ class ms_space
 private:
 	utilities::geometry::vertex mCoordinates; // {x,y,z}
 	utilities::geometry::vector mDimensions; // {width,depth,height}
+	std::vector <utilities::geometry::vertex*> pVertex; //Contains all vertixes of non-orthogonal space {x,y,z}
+	
 	unsigned int mID; // Identification number of the space
+	std::string sDefMethod; // A space definition method; orthogonal or non-orthogonal
 	std::string mSpaceType; // a type which can be defined by a user and which can subsequently be assigned to the space
 	std::vector<std::string> mSurfaceTypes; // each surface can also be assigned a user defined type. Convention: {+y,+x,-y,-x,+z,-z}/{north,east,south,west,top,bottom}
 	void reset(); // resets the space to initial values

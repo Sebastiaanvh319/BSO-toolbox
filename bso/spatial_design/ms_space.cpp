@@ -1,6 +1,7 @@
 #ifndef MS_SPACE_CPP
 #define MS_SPACE_CPP
 
+#include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -58,7 +59,14 @@ ms_space::ms_space(unsigned int id, utilities::geometry::vertex coords, utilitie
 
 ms_space::ms_space(std::string line)
 {
+	// substract sDefMethod
+	
+	sDefMethod = line.substr (0,1); // space definition method; orthogonal or non-orthogonal
+	line.erase(0,2); // Removes the sDefMethod part from the line variable
+	
+	
 	// tokenize the line
+	
 	boost::char_separator<char> sep(","); // defines what separates tokens in a string
 	typedef boost::tokenizer< boost::char_separator<char> > t_tokenizer; // settings for the boost::tokenizer
 	t_tokenizer tokens(line, sep); // this is where the tokenized line will be stored
@@ -80,69 +88,110 @@ ms_space::ms_space(std::string line)
 	t_tokenizer::iterator token = tokens.begin(); // set iterator to first token
 	int number_of_tokens = std::distance( tokens.begin(), tokens.end()); // count the number of tokens int the line
 
+	
 	try 
-	{
-		// get the geometry of the space
-		utilities::geometry::vertex temp;
-
+	{// store values in string line in mDimensions and mCoordinates or pVertex with first value from line variable as mID
 		mID = utilities::trim_and_cast_int(*(token));
-		temp(0) = utilities::trim_and_cast_double(*(++token));
-		temp(1) = utilities::trim_and_cast_double(*(++token));
-		temp(2) = utilities::trim_and_cast_double(*(++token));
-		mDimensions = temp;
-		temp(0) = utilities::trim_and_cast_double(*(++token));
-		temp(1) = utilities::trim_and_cast_double(*(++token));
-		temp(2) = utilities::trim_and_cast_double(*(++token));
-		mCoordinates = temp;
+		utilities::geometry::vertex temp;
+				
+		for(int i=0; i<((number_of_tokens-1)/3); i++)
+		{
+			pVertex.push_back(new utilities::geometry::vertex);
+					
+			temp(0) = utilities::trim_and_cast_double(*(++token));
+			temp(1) = utilities::trim_and_cast_double(*(++token));
+			temp(2) = utilities::trim_and_cast_double(*(++token));
+			
+			*pVertex[i] = temp;		
+		}
 		
-		// handle the tokens
-		switch (number_of_tokens)
-		{
-		case 7: // no space nor surface types have been defined
-		{
-			break;
+				
+		if (sDefMethod == "N" || sDefMethod == "n")
+		{// handle the tokens for the non-orthogonal cases
+			switch (number_of_tokens)
+			{
+				case 19: // 6 corner polyhedron
+				{
+					break;
+				}
+				case 25: // 8 corner polyhedron
+				{
+					break;
+				}
+				case 31: // 10 corner polyhedron
+				{
+					break;
+				}
+				default:
+				{
+				std::stringstream errorMessage;
+				errorMessage << std::endl
+										 << "An invalid amount of input argument was encoutered when trying to initialize the " << sDefMethod << " method defined space with ID " << mID << "." << std::endl
+										 << "When trying to parse the following input line: " << std::endl
+										 << line << std::endl
+										 << "The determined number_of_tokens are: " << number_of_tokens << " and should be: 25" << std::endl
+										 << "(bso/spatial_design/ms_space.cpp)" << std::endl;
+				throw std::invalid_argument(errorMessage.str());
+				
+				break;
+				}			
+			} 
 		} 
-		case 8: // only a space type has been defined
+		else if (sDefMethod == "R" || sDefMethod == "r") //number_of_tokens = 7
 		{
-			mSpaceType = *(++token);
-			boost::algorithm::trim(mSpaceType);			
-			break;
-		}
-		case 13: // only surface types have been defind
-		case 14: // both a space type and surface types have been defined
-		{
-			if (number_of_tokens == 14)
-			{
-				mSpaceType = *(++token);
-				boost::algorithm::trim(mSpaceType);
+			std::cout << "dit is een try out" << std::endl;
+			
+			mDimensions = *pVertex[0];
+			mCoordinates = *pVertex[1];
+			pVertex.clear(); // A clearing of values from pVertex to avoid mis use
+					
+			switch (number_of_tokens)
+			{ // handle the tokens for the orthogonal cases
+				case 7: // orthogonal regtangal; no space nor surface types have been defined
+				{
+					break;
+				} 
+				case 8: // orthogonal regtangal; only a space type has been defined
+				{
+					mSpaceType = *(++token);
+					boost::algorithm::trim(mSpaceType);			
+					break; 
+				}
+				case 13: // orthogonal regtangal; only surface types have been defind
+				case 14: // orthogonal regtangal; both a space type and surface types have been defined
+				{
+					if (number_of_tokens == 14)
+					{
+						mSpaceType = *(++token);
+						boost::algorithm::trim(mSpaceType);
+					}
+					
+					mSurfaceTypes.clear();
+					std::string temp;
+					
+					for (unsigned int i = 0; i < 6; i++)
+					{
+						temp = *(++token);
+						boost::algorithm::trim(temp);
+						mSurfaceTypes.push_back(temp);
+					}
 
-			}
-			
-			mSurfaceTypes.clear();
-			std::string temp;
-			
-			for (unsigned int i = 0; i < 6; i++)
-			{
-				temp = *(++token);
-				boost::algorithm::trim(temp);
-				mSurfaceTypes.push_back(temp);
-			}
-
-			break;
-		}
-		default:
-		{
-			std::stringstream errorMessage;
-			errorMessage << std::endl
-									 << "An invalid amount of input argument was encoutered when trying to initialize the space with ID " << mID << "." << std::endl
-									 << "When trying to parse the following input line: " << std::endl
-									 << line << std::endl
-									 << "(bso/spatial_design/ms_space.cpp)" << std::endl;
-			throw std::invalid_argument(errorMessage.str());
-			
-			break;
-		}
-		}
+					break;
+				}
+				default:
+				{
+					std::stringstream errorMessage;
+					errorMessage << std::endl
+											 << "An invalid amount of input argument was encoutered when trying to initialize the " << sDefMethod << " method defined space with ID " << mID << "." << std::endl
+											 << "When trying to parse the following input line: " << std::endl
+											 << line << std::endl
+											 << "(bso/spatial_design/ms_space.cpp)" << std::endl;
+					throw std::invalid_argument(errorMessage.str());
+					
+					break;
+				}
+			} // switch statement
+		} // if statement for sDefMethod == "R" or "r"
 	}
 	catch (std::exception& e)
 	{
@@ -155,19 +204,22 @@ ms_space::ms_space(std::string line)
 		throw std::invalid_argument(errorMessage.str());
 	}
 	
-	try
+	if (sDefMethod == "R" || sDefMethod == "r") //number_of_tokens = 7
 	{
-		checkValidity();
-	}
-	catch(std::exception& e)
-	{
-		std::stringstream errorMessage;
-		errorMessage << std::endl
-								 << "Parsing the following line to initialize leads to an invalid ms_space:" << std::endl
-								 << line << std::endl
-								 << "(bso/spatial_design/ms_space.cpp). Got the following error:" << std::endl
-								 << e.what() << std::endl;
-		throw std::invalid_argument(errorMessage.str());
+		try
+		{
+			checkValidity();
+		}
+		catch(std::exception& e)
+		{
+			std::stringstream errorMessage;
+			errorMessage << std::endl
+									 << "Parsing the following line to initialize leads to an invalid ms_space:" << std::endl
+									 << line << std::endl
+									 << "(bso/spatial_design/ms_space.cpp). Got the following error:" << std::endl
+									 << e.what() << std::endl;
+			throw std::invalid_argument(errorMessage.str());
+		}
 	}
 } // ms_space()
 
@@ -178,19 +230,24 @@ ms_space::ms_space(const ms_space& rhs)
 	mID           = rhs.mID;
 	mSpaceType    = rhs.mSpaceType;
 	mSurfaceTypes = rhs.mSurfaceTypes;
+	pVertex		  = rhs.pVertex; // Tessa Defined
+	sDefMethod	  = rhs.sDefMethod;
 	
-	try
+	if (sDefMethod == "R" || sDefMethod == "r") // the checkValidity test is specifically for the R space type insertion method.
 	{
-		checkValidity();
-	}
-	catch(std::exception& e)
-	{
-		std::stringstream errorMessage;
-		errorMessage << std::endl
-								 << "Encountered invalid space when copying the space with the following ID:" << rhs.mID << std::endl
-								 << "(bso/spatial_design/ms_space.cpp). Got the following error:" << std::endl
-								 << e.what() << std::endl;
-		throw std::invalid_argument(errorMessage.str());
+		try
+		{
+			checkValidity();
+		}
+		catch(std::exception& e)
+		{
+			std::stringstream errorMessage;
+			errorMessage << std::endl
+									 << "Encountered invalid space when copying the space with the following ID:" << rhs.mID << std::endl
+									 << "(bso/spatial_design/ms_space.cpp). Got the following error:" << std::endl
+									 << e.what() << std::endl;
+			throw std::invalid_argument(errorMessage.str());
+		}
 	}
 } // ms_space()
 
@@ -210,7 +267,8 @@ void ms_space::reset()
 
 bool ms_space::checkValidity() const
 {
-	if (mDimensions.minCoeff() < 0)
+	bool check = mDimensions.minCoeff() < 0;
+	if (check)
 	{
 		std::stringstream errorMessage;
 		errorMessage << std::endl
@@ -219,6 +277,7 @@ bool ms_space::checkValidity() const
 								 << "(bso/spatial_design/ms_space.hpp)" << std::endl;
 		throw std::invalid_argument(errorMessage.str());
 	}
+	return check;
 }
 
 void ms_space::setCoordinates(const utilities::geometry::vertex& coords)
@@ -226,7 +285,7 @@ void ms_space::setCoordinates(const utilities::geometry::vertex& coords)
 	try
 	{
 		mCoordinates = coords;
-		checkValidity();
+		//checkValidity();
 	}
 	catch(std::exception& e)
 	{
@@ -278,19 +337,32 @@ utilities::geometry::vector ms_space::getDimensions() const
 utilities::geometry::quad_hexahedron ms_space::getGeometry() const
 { // return the geometry of the space
 	std::vector<utilities::geometry::vertex> cornerPoints;
-	cornerPoints.reserve(8);
-	std::vector<unsigned int> vertexOrder = {0,1,3,2,4,5,7,6};
-	for (const auto& i : vertexOrder)
+	
+	if (sDefMethod == "R" || sDefMethod == "r")
 	{
-		auto tempPoint = mCoordinates;
-		for (unsigned int j = 0; j < 3; j++)
+		cornerPoints.reserve(8);
+		std::vector<unsigned int> vertexOrder = {0,1,3,2,4,5,7,6};
+		for (const auto& i : vertexOrder)
 		{
-			if (std::bitset<3>(i)[j]) tempPoint[j] += mDimensions[j];
+			auto tempPoint = mCoordinates;
+			for (unsigned int j = 0; j < 3; j++)
+			{
+				if (std::bitset<3>(i)[j]) tempPoint[j] += mDimensions[j];
+			}
+			cornerPoints.push_back(tempPoint);
 		}
-		cornerPoints.push_back(tempPoint);
+	}
+	
+	else if (sDefMethod == "N" || sDefMethod == "n")
+	{
+		for (int i=0; i<pVertex.size(); i++)
+		{
+			cornerPoints.push_back(*pVertex[i]);
+		}
 	}
 	return bso::utilities::geometry::quad_hexahedron(cornerPoints);
 } // getGeometry
+
 
 bool ms_space::getSpaceType(std::string& spaceType) const
 {

@@ -15,6 +15,7 @@ private:
 	std::vector<ms_space*> mSpaces;
 	mutable unsigned int mLastSpaceID;
 	void checkValidity() const;
+	std::string insertFileName;
 public:
 	ms_building(); // empty constructor
 	ms_building(std::string fileName); // initilization by string or text file
@@ -22,6 +23,7 @@ public:
 	ms_building(const sc_building& sc); // convert SC to MS
 	~ms_building(); // destructor
 	
+	const std::string getInsertFileName() const{return insertFileName;}
 	void writeToFile(std::string fileName) const;
 	std::vector<ms_space*> getSpacePtrs() const;
 	ms_space* getSpacePtr(const ms_space& space) const;
@@ -36,7 +38,6 @@ public:
 		const bool includePartialSpaces = false) const;
 		
 	void setZZero();
-	void resetOrigin(const std::vector<unsigned int>& indices = {0,1,2});
 	void addSpace(const ms_space& space);
 	void deleteSpace(ms_space* spacePtr);
 	void deleteSpace(ms_space& space);
